@@ -61,3 +61,33 @@ The database design was kept separate from application-level business rules.
 The real database credentials were kept in `server/.env`, which is excluded from Git, while `server/.env.example` contains only the required environment-variable structure.
 
 Course archiving was designed to preserve lessons and enrollment history, and activity logs were designed as append-only records.
+
+## Prompt 3 — Backend Foundation and Prisma Integration
+
+### Prompt
+
+Set up the backend foundation for the Course Delivery & Enrollment application using Node.js and Express.
+
+Create a clean backend structure with configuration, middleware, routes, and controllers folders. Configure CORS and JSON middleware, create a basic health-check endpoint, and connect Prisma 7 to the existing PostgreSQL database.
+
+The backend should use a simple and maintainable structure suitable for a company assignment. Test both the API server and the database connection before moving to authentication.
+
+### What you got
+
+The Express backend structure was created with `src/app.js` and `src/server.js`.
+
+CORS and JSON middleware were configured, and a `/api/health` endpoint was added.
+
+Prisma 7 was connected using the PostgreSQL adapter and the generated Prisma Client.
+
+A `/api/health/db` endpoint was added to verify the database connection.
+
+### What you corrected
+
+The initial Prisma client import was incompatible with the Prisma 7 generated client.
+
+The backend was converted from CommonJS to ES Modules so it could work correctly with the Prisma 7 client configuration.
+
+The Prisma client was regenerated and the database connection was successfully tested.
+
+The final setup was kept simple and separated into application and configuration files.

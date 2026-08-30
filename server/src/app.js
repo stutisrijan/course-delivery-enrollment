@@ -1,11 +1,32 @@
 import express from "express";
 import cors from "cors";
 import prisma from "./config/prisma.js";
-
+import authRoutes from "./routes/authRoutes.js";
+import { authenticate, authorize } from "./middleware/authMiddleware.js";
+import courseRoutes from "./routes/courseRoutes.js";
+import lessonRoutes from "./routes/lessonRoutes.js";
+import enrollmentRoutes from "./routes/enrollmentRoutes.js";
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/courses", courseRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api", lessonRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+// Temporary authentication test
+app.get(
+  "/api/test/instructor",
+  authenticate,
+  authorize("INSTRUCTOR"),
+  (req, res) => {
+    res.json({
+      success: true,
+      message: "Instructor access granted",
+      user: req.user,
+    });
+  }
+);
 
 app.get("/api/health", (req, res) => {
   res.json({
