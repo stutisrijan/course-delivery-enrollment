@@ -7,6 +7,11 @@ import {
 } from "../controllers/enrollmentController.js";
 
 import {
+  bulkEnrollLearners,
+  exportCourseProgress,
+} from "../controllers/bulkEnrollmentController.js";
+
+import {
   authenticate,
   authorize,
 } from "../middleware/authMiddleware.js";
@@ -19,6 +24,22 @@ router.post(
   authenticate,
   authorize("INSTRUCTOR"),
   enrollLearner
+);
+
+// Instructor bulk enrolls learners
+router.post(
+  "/courses/:courseId/enroll/bulk",
+  authenticate,
+  authorize("INSTRUCTOR"),
+  bulkEnrollLearners
+);
+
+// Instructor exports course progress as CSV
+router.get(
+  "/courses/:courseId/progress/export",
+  authenticate,
+  authorize("INSTRUCTOR"),
+  exportCourseProgress
 );
 
 // Learner enrolls themselves

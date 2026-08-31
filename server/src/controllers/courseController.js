@@ -21,7 +21,6 @@ export const createCourse = async (req, res) => {
       },
     });
 
-    // Immutable activity log
     await prisma.activityLog.create({
       data: {
         courseId: course.id,
@@ -64,9 +63,10 @@ export const getCourses = async (req, res) => {
     } = req.query;
 
     const pageNumber = Math.max(parseInt(page) || 1, 1);
-    const limitNumber = Math.min(Math.max(parseInt(limit) || 10, 1), 100);
-
-    const skip = (pageNumber - 1) * limitNumber;
+    const limitNumber = Math.min(
+      Math.max(parseInt(limit) || 10, 1),
+      100
+    );
 
     const where = {};
 
@@ -74,16 +74,18 @@ export const getCourses = async (req, res) => {
     if (req.user.role === "LEARNER") {
       where.status = "PUBLISHED";
     } else {
-      // Instructors can filter by status
+      // Instructors can see all courses
       if (status) {
         where.status = status;
       }
     }
 
+    // Category filter
     if (category) {
       where.category = category;
     }
 
+    // Instructor filter
     if (instructorId) {
       where.instructorId = instructorId;
     }
@@ -106,25 +108,93 @@ export const getCourses = async (req, res) => {
       ];
     }
 
-    const allowedSortFields = [
-      "title",
-      "createdAt",
-    ];
-
-    const actualSortBy = allowedSortFields.includes(sortBy)
-      ? sortBy
-      : "createdAt";
-
     const actualSortOrder = sortOrder === "asc" ? "asc" : "desc";
+
+    /*
+     * enrollmentCount sorting cannot use Prisma's _count inside
+     * orderBy with the current Prisma Client version.
+     *
+     * So for enrollmentCount:
+     * 1. Fetch matching courses on the server.
+     * 2. Sort them on the server.
+     * 3. Apply pagination on the server.
+     *
+     * Nothing is sent to the browser before pagination.
+     */
+    if (sortBy === "enrollmentCount") {
+      const courses = await prisma.course.findMany({
+        where,
+        include: {
+          instructor: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          _count: {
+            select: {
+              enrollments: true,
+              lessons: true,
+            },
+          },
+        },
+      });
+
+      courses.sort((a, b) => {
+        const countA = a._count.enrollments;
+        const countB = b._count.enrollments;
+
+        if (actualSortOrder === "asc") {
+          return countA - countB;
+        }
+
+        return countB - countA;
+      });
+
+      const total = courses.length;
+
+      const skip = (pageNumber - 1) * limitNumber;
+
+      const paginatedCourses = courses.slice(
+        skip,
+        skip + limitNumber
+      );
+
+      return res.status(200).json({
+        success: true,
+        courses: paginatedCourses,
+        pagination: {
+          page: pageNumber,
+          limit: limitNumber,
+          total,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      });
+    }
+
+    // Pagination for normal database sorting
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let orderBy;
+
+    if (sortBy === "title") {
+      orderBy = {
+        title: actualSortOrder,
+      };
+    } else {
+      // Default sorting by creation date
+      orderBy = {
+        createdAt: actualSortOrder,
+      };
+    }
 
     const [courses, total] = await Promise.all([
       prisma.course.findMany({
         where,
         skip,
         take: limitNumber,
-        orderBy: {
-          [actualSortBy]: actualSortOrder,
-        },
+        orderBy,
         include: {
           instructor: {
             select: {
@@ -142,7 +212,9 @@ export const getCourses = async (req, res) => {
         },
       }),
 
-      prisma.course.count({ where }),
+      prisma.course.count({
+        where,
+      }),
     ]);
 
     return res.status(200).json({
@@ -241,7 +313,6 @@ export const updateCourse = async (req, res) => {
       });
     }
 
-    // Instructor can edit only their own courses
     if (course.instructorId !== req.user.userId) {
       return res.status(403).json({
         success: false,
@@ -252,7 +323,9 @@ export const updateCourse = async (req, res) => {
     const updatedCourse = await prisma.course.update({
       where: { id },
       data: {
-        ...(title !== undefined && { title: title.trim() }),
+        ...(title !== undefined && {
+          title: title.trim(),
+        }),
         ...(description !== undefined && {
           description: description.trim(),
         }),
@@ -325,8 +398,7 @@ export const publishCourse = async (req, res) => {
       });
     }
 
-    // IMPORTANT REQUIREMENT:
-    // Empty courses cannot be published.
+    // Empty courses cannot be published
     if (course._count.lessons === 0) {
       return res.status(400).json({
         success: false,

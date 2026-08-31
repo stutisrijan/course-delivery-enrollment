@@ -6,6 +6,7 @@ import { authenticate, authorize } from "./middleware/authMiddleware.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import lessonRoutes from "./routes/lessonRoutes.js";
 import enrollmentRoutes from "./routes/enrollmentRoutes.js";
+import progressRoutes from "./routes/progressRoutes.js";
 const app = express();
 
 app.use(cors());
@@ -14,6 +15,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", lessonRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/progress", progressRoutes);
 // Temporary authentication test
 app.get(
   "/api/test/instructor",
