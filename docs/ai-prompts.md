@@ -3,91 +3,64 @@
 ## Prompt 1 — Project Planning and Technology Stack
 
 ### Prompt
-
-I need to build a Course Delivery & Enrollment web application for a company assignment with approximately 12 hours of development time. The application requires authentication with instructor and learner roles, courses, lessons, publishing/archive states, learner enrollment and progress tracking, server-side search/filtering/pagination, bulk enrollment with CSV export, an instructor dashboard, immutable activity logs, and inactivity alerts.
-
-Create a simple and presentable technology stack and development plan. Explain why each technology should be selected. I also need to submit multiple documents, so provide an exact documentation checklist and suggest whether documentation should be done simultaneously with development or after the project.
+Plan a Course Delivery & Enrollment application with authentication, courses, lessons, enrollment, progress tracking, search, bulk enrollment, dashboard, activity logs, and inactivity alerts. Suggest a suitable technology stack and development plan.
 
 ### What I got
-
-The project was planned as an incremental full-stack application using React/Vite for the frontend, Express/Node.js for the backend, PostgreSQL for the database, and Prisma as the ORM.
-
-The development was divided into small steps so that implementation, testing, documentation, and Git commits could be completed continuously.
-
-### What I corrected
-
-The original approach was changed to work in 2–3 hour development sessions.
-
-Each meaningful step will be tested, documented, and committed before moving to the next step. AI prompts and important development decisions will also be recorded in the project documentation.
+React/Vite, Node.js/Express, PostgreSQL/Supabase, and Prisma were selected. Development was divided into small tested checkpoints with continuous documentation and Git commits.
 
 ---
 
 ## Prompt 2 — Database Design and Prisma Setup
 
 ### Prompt
-
-Design and implement the database structure for the Course Delivery & Enrollment application.
-
-The database must support instructors and learners, course creation, Draft/Published/Archived course states, lessons and lesson ordering, many-to-many learner/course enrollment, learner lesson progress, immutable activity history, 14-day inactivity alerts, and server-side course search and filtering.
-
-Use PostgreSQL with Prisma. First document the database design, then implement the Prisma schema. Include appropriate relationships, unique constraints, foreign keys, and indexes. Do not expose database credentials.
+Design a PostgreSQL database using Prisma for users, courses, lessons, enrollments, lesson progress, activity logs, and inactivity alerts. Include relationships, constraints, indexes, and course/progress states.
 
 ### What I got
+The Prisma schema and database documentation were created. The schema was formatted, validated, migrated, and successfully connected to Supabase PostgreSQL.
 
-The database design was documented in `docs/schema.md`.
+---
 
-The main entities were:
-
-- User
-- Course
-- Lesson
-- Enrollment
-- LessonProgress
-- ActivityLog
-- InactivityAlert
-
-The Prisma schema was implemented in `server/prisma/schema.prisma`.
-
-The schema includes UUID primary keys, role and course-status enums, relationships, unique constraints, and indexes.
-
-The schema was formatted and successfully validated using Prisma.
-
-An initial migration was created and successfully applied to the Supabase PostgreSQL database.
-
-### What I corrected
-
-The database design was kept separate from application-level business rules.
-
-The real database credentials were kept in `server/.env`, which is excluded from Git, while `server/.env.example` contains only the required environment-variable structure.
-
-Course archiving was designed to preserve lessons and enrollment history, and activity logs were designed as append-only records.
-
-## Prompt 3 — Backend Foundation and Prisma Integration
+## Prompt 3 — Backend Foundation and Authentication
 
 ### Prompt
+Set up an Express backend with Prisma 7, CORS, JSON middleware, health-check APIs, registration/login using bcryptjs and JWT, authentication middleware, and role-based authorization.
 
-Set up the backend foundation for the Course Delivery & Enrollment application using Node.js and Express.
+### What I got
+The backend structure, Prisma connection, health APIs, registration, login, JWT authentication, and instructor/learner authorization were implemented and tested.
 
-Create a clean backend structure with configuration, middleware, routes, and controllers folders. Configure CORS and JSON middleware, create a basic health-check endpoint, and connect Prisma 7 to the existing PostgreSQL database.
+### What I corrected
+The backend was converted to ES Modules to support the Prisma 7 setup correctly.
 
-The backend should use a simple and maintainable structure suitable for a company assignment. Test both the API server and the database connection before moving to authentication.
+---
 
-### What you got
+## Prompt 4 — Courses, Lessons, Enrollment and Progress
 
-The Express backend structure was created with `src/app.js` and `src/server.js`.
+### Prompt
+Implement course CRUD, publishing, archiving/restoring, lesson management and reordering, instructor enrollment, learner self-enrollment, and learner progress tracking.
 
-CORS and JSON middleware were configured, and a `/api/health` endpoint was added.
+### What I got
+Courses, lessons, enrollment, lesson completion, and progress tracking were implemented and tested.
 
-Prisma 7 was connected using the PostgreSQL adapter and the generated Prisma Client.
+Progress correctly moves:
 
-A `/api/health/db` endpoint was added to verify the database connection.
+`NOT_STARTED → IN_PROGRESS → COMPLETED`
 
-### What you corrected
+Lesson reordering validates that every lesson ID is included exactly once.
 
-The initial Prisma client import was incompatible with the Prisma 7 generated client.
+---
 
-The backend was converted from CommonJS to ES Modules so it could work correctly with the Prisma 7 client configuration.
+## Prompt 5 — Course Finding, Bulk Enrollment and CSV Export
 
-The Prisma client was regenerated and the database connection was successfully tested.
+### Prompt
+Implement server-side course search, filtering, sorting and pagination. Implement bulk learner enrollment by email and CSV export of enrolled learners' progress.
 
-The final setup was kept simple and separated into application and configuration files.
+### What I got
+Server-side course search/filtering/sorting/pagination was implemented.
+
+Bulk enrollment correctly reports:
+
+- `UNKNOWN`
+- `ALREADY_ENROLLED`
+- `NEWLY_ENROLLED`
+
+CSV progress export was implemented and tested with learner name, email, course, lessons, percentage, and state.
