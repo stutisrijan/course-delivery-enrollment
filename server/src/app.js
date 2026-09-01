@@ -10,6 +10,7 @@ import progressRoutes from "./routes/progressRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
+import inactivityAlertRoutes from "./routes/inactivityAlertRoutes.js";
 const app = express();
 
 app.use(cors());
@@ -22,6 +23,7 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api", activityRoutes);
 app.use("/api", commentRoutes);
+app.use("/api/inactivity-alerts", inactivityAlertRoutes);
 // Temporary authentication test
 app.get(
   "/api/test/instructor",

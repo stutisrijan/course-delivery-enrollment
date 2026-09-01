@@ -2,52 +2,40 @@ generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
 }
+
 datasource db {
   provider = "postgresql"
 }
 
-enum UserRole {
-  INSTRUCTOR
-  LEARNER
-}
-
-enum CourseStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         UserRole
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  email            String            @unique
+  passwordHash     String
+  role             UserRole
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  activityLogs     ActivityLog[]     @relation("ActivityActors")
   courses          Course[]          @relation("InstructorCourses")
   enrollments      Enrollment[]      @relation("LearnerEnrollments")
-  lessonProgress   LessonProgress[]
-  activityLogs     ActivityLog[]     @relation("ActivityActors")
   inactivityAlerts InactivityAlert[] @relation("AlertLearners")
+  lessonProgress   LessonProgress[]
 }
 
 model Course {
-  id           String       @id @default(uuid()) @db.Uuid
-  title        String
-  description  String
-  category     String
-  status       CourseStatus @default(DRAFT)
-  instructorId String       @db.Uuid
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  instructor       User              @relation("InstructorCourses", fields: [instructorId], references: [id])
-  lessons          Lesson[]
-  enrollments      Enrollment[]
+  id               String            @id @default(uuid()) @db.Uuid
+  title            String
+  description      String
+  category         String
+  status           CourseStatus      @default(DRAFT)
+  instructorId     String            @db.Uuid
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   activityLogs     ActivityLog[]
+  instructor       User              @relation("InstructorCourses", fields: [instructorId], references: [id])
+  enrollments      Enrollment[]
   inactivityAlerts InactivityAlert[]
+  lessons          Lesson[]
 
   @@index([status])
   @@index([category])
@@ -56,16 +44,15 @@ model Course {
 }
 
 model Lesson {
-  id        String   @id @default(uuid()) @db.Uuid
-  courseId  String   @db.Uuid
+  id        String           @id @default(uuid()) @db.Uuid
+  courseId  String           @db.Uuid
   title     String
   content   String
   position  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  progress LessonProgress[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress  LessonProgress[]
 
   @@index([courseId])
   @@index([courseId, position])
@@ -76,9 +63,8 @@ model Enrollment {
   learnerId  String   @db.Uuid
   courseId   String   @db.Uuid
   enrolledAt DateTime @default(now())
-
-  learner User   @relation("LearnerEnrollments", fields: [learnerId], references: [id])
-  course  Course @relation(fields: [courseId], references: [id])
+  course     Course   @relation(fields: [courseId], references: [id])
+  learner    User     @relation("LearnerEnrollments", fields: [learnerId], references: [id])
 
   @@unique([learnerId, courseId])
   @@index([learnerId])
@@ -92,9 +78,8 @@ model LessonProgress {
   completed   Boolean   @default(false)
   completedAt DateTime?
   updatedAt   DateTime  @updatedAt
-
-  learner User   @relation(fields: [learnerId], references: [id])
-  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  learner     User      @relation(fields: [learnerId], references: [id])
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([learnerId, lessonId])
   @@index([learnerId])
@@ -111,9 +96,8 @@ model ActivityLog {
   comment    String?
   metadata   Json?
   createdAt  DateTime @default(now())
-
-  course Course @relation(fields: [courseId], references: [id])
-  actor  User   @relation("ActivityActors", fields: [actorId], references: [id])
+  actor      User     @relation("ActivityActors", fields: [actorId], references: [id])
+  course     Course   @relation(fields: [courseId], references: [id])
 
   @@index([courseId])
   @@index([actorId])
@@ -128,12 +112,22 @@ model InactivityAlert {
   lastProgressAt DateTime
   dismissedAt    DateTime?
   createdAt      DateTime  @default(now())
-
-  learner User   @relation("AlertLearners", fields: [learnerId], references: [id])
-  course  Course @relation(fields: [courseId], references: [id])
+  course         Course    @relation(fields: [courseId], references: [id])
+  learner        User      @relation("AlertLearners", fields: [learnerId], references: [id])
 
   @@index([learnerId])
   @@index([courseId])
   @@index([createdAt])
   @@index([learnerId, courseId])
+}
+
+enum UserRole {
+  INSTRUCTOR
+  LEARNER
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

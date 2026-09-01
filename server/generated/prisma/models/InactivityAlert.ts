@@ -190,8 +190,8 @@ export type InactivityAlertWhereInput = {
   lastProgressAt?: Prisma.DateTimeFilter<"InactivityAlert"> | Date | string
   dismissedAt?: Prisma.DateTimeNullableFilter<"InactivityAlert"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"InactivityAlert"> | Date | string
-  learner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
+  learner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type InactivityAlertOrderByWithRelationInput = {
@@ -201,8 +201,8 @@ export type InactivityAlertOrderByWithRelationInput = {
   lastProgressAt?: Prisma.SortOrder
   dismissedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  learner?: Prisma.UserOrderByWithRelationInput
   course?: Prisma.CourseOrderByWithRelationInput
+  learner?: Prisma.UserOrderByWithRelationInput
 }
 
 export type InactivityAlertWhereUniqueInput = Prisma.AtLeast<{
@@ -215,8 +215,8 @@ export type InactivityAlertWhereUniqueInput = Prisma.AtLeast<{
   lastProgressAt?: Prisma.DateTimeFilter<"InactivityAlert"> | Date | string
   dismissedAt?: Prisma.DateTimeNullableFilter<"InactivityAlert"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"InactivityAlert"> | Date | string
-  learner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
+  learner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id">
 
 export type InactivityAlertOrderByWithAggregationInput = {
@@ -248,8 +248,8 @@ export type InactivityAlertCreateInput = {
   lastProgressAt: Date | string
   dismissedAt?: Date | string | null
   createdAt?: Date | string
-  learner: Prisma.UserCreateNestedOneWithoutInactivityAlertsInput
   course: Prisma.CourseCreateNestedOneWithoutInactivityAlertsInput
+  learner: Prisma.UserCreateNestedOneWithoutInactivityAlertsInput
 }
 
 export type InactivityAlertUncheckedCreateInput = {
@@ -266,8 +266,8 @@ export type InactivityAlertUpdateInput = {
   lastProgressAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   dismissedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  learner?: Prisma.UserUpdateOneRequiredWithoutInactivityAlertsNestedInput
   course?: Prisma.CourseUpdateOneRequiredWithoutInactivityAlertsNestedInput
+  learner?: Prisma.UserUpdateOneRequiredWithoutInactivityAlertsNestedInput
 }
 
 export type InactivityAlertUncheckedUpdateInput = {
@@ -594,8 +594,8 @@ export type InactivityAlertSelect<ExtArgs extends runtime.Types.Extensions.Inter
   lastProgressAt?: boolean
   dismissedAt?: boolean
   createdAt?: boolean
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["inactivityAlert"]>
 
 export type InactivityAlertSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -605,8 +605,8 @@ export type InactivityAlertSelectCreateManyAndReturn<ExtArgs extends runtime.Typ
   lastProgressAt?: boolean
   dismissedAt?: boolean
   createdAt?: boolean
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["inactivityAlert"]>
 
 export type InactivityAlertSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -616,8 +616,8 @@ export type InactivityAlertSelectUpdateManyAndReturn<ExtArgs extends runtime.Typ
   lastProgressAt?: boolean
   dismissedAt?: boolean
   createdAt?: boolean
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["inactivityAlert"]>
 
 export type InactivityAlertSelectScalar = {
@@ -631,23 +631,23 @@ export type InactivityAlertSelectScalar = {
 
 export type InactivityAlertOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "learnerId" | "courseId" | "lastProgressAt" | "dismissedAt" | "createdAt", ExtArgs["result"]["inactivityAlert"]>
 export type InactivityAlertInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type InactivityAlertIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type InactivityAlertIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
+  learner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $InactivityAlertPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "InactivityAlert"
   objects: {
-    learner: Prisma.$UserPayload<ExtArgs>
     course: Prisma.$CoursePayload<ExtArgs>
+    learner: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1050,8 +1050,8 @@ readonly fields: InactivityAlertFieldRefs;
  */
 export interface Prisma__InactivityAlertClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  learner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   course<T extends Prisma.CourseDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CourseDefaultArgs<ExtArgs>>): Prisma.Prisma__CourseClient<runtime.Types.Result.GetResult<Prisma.$CoursePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  learner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
