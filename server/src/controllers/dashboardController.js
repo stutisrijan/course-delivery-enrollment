@@ -7,15 +7,10 @@ export const getDashboard = async (req, res) => {
     // 1. HEADLINE STATISTICS
     // ---------------------------------------
 
-    const totalLearners = await prisma.user.count({
-      where: {
-        role: "LEARNER",
-      },
-    });
-
     const publishedCourses = await prisma.course.count({
       where: {
         status: "PUBLISHED",
+        instructorId: req.user.userId,
       },
     });
 
@@ -24,6 +19,11 @@ export const getDashboard = async (req, res) => {
     // ---------------------------------------
 
     const enrollments = await prisma.enrollment.findMany({
+      where: {
+        course: {
+          instructorId: req.user.userId,
+        },
+      },
       include: {
         course: {
           include: {
@@ -37,6 +37,7 @@ export const getDashboard = async (req, res) => {
       },
     });
 
+    const totalLearners = new Set(enrollments.map((enrollment) => enrollment.learnerId)).size;
     let completionsThisMonth = 0;
 
     // Unique learners currently in progress

@@ -104,6 +104,13 @@ export const getCourseLessons = async (req, res) => {
       });
     }
 
+    if (req.user.role === "LEARNER" && course.status !== "PUBLISHED") {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
     const lessons = await prisma.lesson.findMany({
       where: {
         courseId,

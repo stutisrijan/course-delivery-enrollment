@@ -371,7 +371,7 @@ export const updateCourse = async (req, res) => {
 export const publishCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { comment } = req.body;
+    const { comment } = req.body || {};
 
     const course = await prisma.course.findUnique({
       where: { id },
@@ -451,7 +451,7 @@ export const publishCourse = async (req, res) => {
 export const archiveCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { comment } = req.body;
+    const { comment } = req.body || {};
 
     const course = await prisma.course.findUnique({
       where: { id },
@@ -516,7 +516,7 @@ export const archiveCourse = async (req, res) => {
 export const restoreCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { comment } = req.body;
+    const { comment } = req.body || {};
 
     const course = await prisma.course.findUnique({
       where: { id },
