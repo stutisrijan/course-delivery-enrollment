@@ -1,122 +1,129 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useMemo, useState } from "react";
+import api, { request } from "./services/api";
+import "./App.css";
+
+const icons = { dashboard: "▦", courses: "▤", learning: "▶", alerts: "◉", logout: "↗", plus: "+", search: "⌕", arrow: "→" };
+const emptyCourse = { title: "", description: "", category: "" };
+const date = (value) => value ? new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)) : "—";
+const nice = (value = "") => value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "null"));
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [page, setPage] = useState("dashboard");
+  const [courses, setCourses] = useState([]); const [coursePagination, setCoursePagination] = useState(null); const [dashboard, setDashboard] = useState(null);
+  const [alerts, setAlerts] = useState([]); const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState({ category: "", status: "", sortBy: "createdAt" });
+  const [selected, setSelected] = useState(null); const [notice, setNotice] = useState("");
+  const [modal, setModal] = useState(null); const [loading, setLoading] = useState(false); const [progressVersion, setProgressVersion] = useState(0);
+  const instructor = user?.role === "INSTRUCTOR";
+  const showNotice = (message) => { setNotice(message); setTimeout(() => setNotice(""), 3600); };
+  const logout = () => { localStorage.clear(); setToken(null); setUser(null); setPage("dashboard"); };
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  const loadCourses = async () => {
+    if (!token) return;
+    setLoading(true);
+    try { const d = await request("get", "/courses", null, { params: { ...filters, search: query, limit: 9 } }); setCourses(d.courses || []); setCoursePagination(d.pagination || null); }
+    catch (e) { showNotice(e.response?.data?.message || "Could not load courses"); } finally { setLoading(false); }
+  };
+  const loadDashboard = async () => { if (instructor) { try { setDashboard((await request("get", "/dashboard")).dashboard); } catch { /* dashboard may be unavailable until data is seeded */ } } };
+  const loadAlerts = async () => { if (instructor) { try { setAlerts((await request("get", "/inactivity-alerts")).alerts || []); } catch { setAlerts([]); } } };
+  useEffect(() => { loadCourses(); }, [token, filters, query]);
+  useEffect(() => { if (token) { loadDashboard(); loadAlerts(); } }, [token, user]);
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const openCourse = async (course) => { try { setSelected((await request("get", `/courses/${course.id}`)).course); setPage("course"); } catch (e) { showNotice(e.response?.data?.message || "Could not open course"); } };
+  const saveCourse = async (form) => { try { const d = modal?.course ? await request("put", `/courses/${modal.course.id}`, form) : await request("post", "/courses", form); setModal(null); showNotice(d.message); loadCourses(); loadDashboard(); } catch (e) { showNotice(e.response?.data?.message || "Could not save course"); } };
+  const courseAction = async (action) => { try { const d = await request("patch", `/courses/${selected.id}/${action}`, {}); setSelected(d.course); showNotice(d.message); loadCourses(); } catch (e) { showNotice(e.response?.data?.message || "Action unavailable"); } };
+  const selfEnroll = async (id) => { try { showNotice((await request("post", `/enrollments/courses/${id}/self-enroll`)).message); } catch (e) { showNotice(e.response?.data?.message || "Could not enroll"); } };
+  const addLesson = async (form) => { try { await request("post", `/courses/${selected.id}/lessons`, form); setModal(null); await openCourse(selected); showNotice("Lesson added"); } catch (e) { showNotice(e.response?.data?.message || "Could not add lesson"); } };
+  const completeLesson = async (lesson) => { try { showNotice((await request("patch", `/progress/lessons/${lesson.id}/complete`)).message); setProgressVersion((version) => version + 1); } catch (e) { showNotice(e.response?.data?.message || "Could not update progress"); } };
+  const updateLesson = async (lessonId, form) => { try { const d = await request("put", `/lessons/${lessonId}`, form); setSelected((course) => ({ ...course, lessons: course.lessons.map((lesson) => lesson.id === lessonId ? d.lesson : lesson) })); showNotice(d.message); } catch (e) { showNotice(e.response?.data?.message || "Could not update lesson"); } };
+  const deleteLesson = async (lessonId) => { if (!window.confirm("Delete this lesson?")) return; try { const d = await request("delete", `/lessons/${lessonId}`); setSelected((course) => ({ ...course, lessons: course.lessons.filter((lesson) => lesson.id !== lessonId).map((lesson, index) => ({ ...lesson, position: index + 1 })) })); showNotice(d.message); } catch (e) { showNotice(e.response?.data?.message || "Could not delete lesson"); } };
+  const reorderLessons = async (lessonIds) => { try { const d = await request("patch", `/courses/${selected.id}/lessons/reorder`, { lessonIds }); setSelected((course) => ({ ...course, lessons: d.lessons })); } catch (e) { showNotice(e.response?.data?.message || "Could not reorder lessons"); } };
+  const bulkEnroll = async (emails) => { try { return await request("post", `/enrollments/courses/${selected.id}/enroll/bulk`, { emails }); } catch (e) { throw new Error(e.response?.data?.message || "Could not enroll learners"); } };
+  const exportProgress = async () => { try { const response = await api.get(`/enrollments/courses/${selected.id}/progress/export`, { responseType: "blob" }); const url = URL.createObjectURL(response.data); const link = document.createElement("a"); link.href = url; link.download = `${selected.title.replace(/[^a-z0-9]/gi, "_")}_progress.csv`; link.click(); URL.revokeObjectURL(url); } catch (e) { showNotice("Could not export progress"); } };
+  if (!token || !user) return <RoleAuth onLogin={(d) => { localStorage.setItem("token", d.token); localStorage.setItem("user", JSON.stringify(d.user)); setToken(d.token); setUser(d.user); }} />;
+  return <div className="app-shell">
+    <aside className="sidebar"><div className="brand"><span>◈</span> courseflow</div><p className="role-label">{instructor ? "INSTRUCTOR SPACE" : "LEARNER SPACE"}</p>
+      <nav>{(instructor ? [["dashboard", "Dashboard"], ["courses", "Course library"], ["alerts", "Inactivity alerts"]] : [["dashboard", "Explore courses"], ["learning", "My learning"]]).map(([id, label]) => <button className={page === id ? "active" : ""} onClick={() => setPage(id)} key={id}><span>{icons[id]}</span>{label}{id === "alerts" && alerts.length > 0 && <b>{alerts.length}</b>}</button>)}</nav>
+      <div className="profile"><div className="avatar">{user.name?.[0] || "U"}</div><div><strong>{user.name}</strong><small>{user.email}</small></div></div>
+      <button className="logout logout-visible" onClick={logout}>Log out</button>
+    </aside>
+    <main><header><div><p className="eyebrow">{instructor ? "OVERVIEW" : "LEARNING PORTAL"}</p><h1>{page === "course" ? selected?.title : page === "alerts" ? "Inactivity alerts" : page === "learning" ? "My learning" : instructor ? "Good morning, " + user.name?.split(" ")[0] : "Find your next course"}</h1></div>{instructor && page === "courses" && <button className="primary" onClick={() => setModal({ type: "course" })}>{icons.plus} Create course</button>}</header>
+      {notice && <div className="notice">{notice}</div>}
+      {page === "dashboard" && (instructor ? <Dashboard data={dashboard} courses={courses} onBrowse={() => setPage("courses")} /> : <CourseLibrary courses={courses} loading={loading} filters={filters} setFilters={setFilters} query={query} setQuery={setQuery} pagination={coursePagination} open={openCourse} enroll={selfEnroll} learner />)}
+      {page === "courses" && <CourseLibrary courses={courses} loading={loading} filters={filters} setFilters={setFilters} query={query} setQuery={setQuery} pagination={coursePagination} open={openCourse} />}
+      {page === "learning" && <MyLearning open={openCourse} />}
+      {page === "alerts" && <Alerts alerts={alerts} dismiss={async (a) => { await request("patch", `/inactivity-alerts/${a.learnerId}/${a.courseId}/dismiss`); loadAlerts(); }} />}
+      {page === "course" && selected && <CourseDetail course={selected} instructor={instructor} progressVersion={progressVersion} back={() => setPage(instructor ? "courses" : "dashboard")} edit={() => setModal({ type: "course", course: selected })} addLesson={() => setModal({ type: "lesson" })} action={courseAction} enroll={selfEnroll} complete={completeLesson} updateLesson={updateLesson} deleteLesson={deleteLesson} reorderLessons={reorderLessons} bulkEnroll={bulkEnroll} exportProgress={exportProgress} />}
+    </main>
+    {modal && <Modal modal={modal} close={() => setModal(null)} save={modal.type === "lesson" ? addLesson : saveCourse} />}
+  </div>;
 }
 
-export default App
+function Auth({ onLogin }) { const [register, setRegister] = useState(false); const [form, setForm] = useState({ name: "", email: "", password: "", role: "LEARNER" }); const [error, setError] = useState(""); const submit = async (e) => { e.preventDefault(); try { const d = await request("post", register ? "/auth/register" : "/auth/login", form); if (register) { setRegister(false); setError("Account created. Please sign in."); } else onLogin(d); } catch (e) { setError(e.response?.data?.message || "Something went wrong"); } }; return <div className="auth"><div className="auth-panel"><div className="brand"><span>◈</span> courseflow</div><h1>{register ? "Create your account" : "Welcome back"}</h1><p>{register ? "Start teaching or learning today." : "Sign in to continue your learning journey."}</p><form onSubmit={submit}>{register && <input placeholder="Full name" required onChange={(e) => setForm({ ...form, name: e.target.value })} />}<input type="email" placeholder="Email address" required onChange={(e) => setForm({ ...form, email: e.target.value })} /><input type="password" placeholder="Password" required onChange={(e) => setForm({ ...form, password: e.target.value })} />{register && <select onChange={(e) => setForm({ ...form, role: e.target.value })}><option value="LEARNER">I’m a learner</option><option value="INSTRUCTOR">I’m an instructor</option></select>}{error && <div className="form-error">{error}</div>}<button className="primary" type="submit">{register ? "Create account" : "Sign in"} {icons.arrow}</button></form><button className="link" onClick={() => { setRegister(!register); setError(""); }}>{register ? "Already have an account? Sign in" : "New here? Create an account"}</button></div><div className="auth-art"><span>Learn without limits</span><h2>Build knowledge.<br />Move forward.</h2></div></div> }
+function LegacyDashboard({ data, courses, onBrowse }) { const stats = data ? [[data.totalLearners, "Total learners"], [data.publishedCourses, "Published courses"], [data.completionsThisMonth, "Completions this month"], [data.learnersInProgress, "Learning now"]] : [["—", "Total learners"], ["—", "Published courses"], ["—", "Completions this month"], ["—", "Learning now"]]; const week = data?.weeklyCompletions || []; const max = Math.max(...week.map(x => x.completions), 1); return <><section className="intro-card"><div><span className="spark">✦</span><h2>Keep the momentum going.</h2><p>Create thoughtful learning experiences, see who needs support, and celebrate every milestone.</p><button onClick={onBrowse}>View course library {icons.arrow}</button></div><div className="orb orb-one"/><div className="orb orb-two"/></section><div className="stat-grid">{stats.map(([n,l]) => <article className="stat" key={l}><strong>{n}</strong><span>{l}</span></article>)}</div><section className="dashboard-grid"><article className="panel chart"><div className="panel-title"><div><h3>Completions</h3><p>Last 8 weeks</p></div><b>{data?.completionsThisMonth || 0} this month</b></div><div className="bars">{week.length ? week.map((w,i) => <div key={i}><i style={{height:`${Math.max(8,w.completions/max*100)}%`}}/><small>W{i+1}</small></div>) : <p className="empty">Your completion trend will appear here.</p>}</div></article><article className="panel"><div className="panel-title"><div><h3>Course health</h3><p>Enrollment snapshot</p></div></div>{(data?.courseBreakdown || courses.slice(0,4).map(c => ({courseTitle:c.title,enrollmentCount:c._count?.enrollments || 0}))).slice(0,4).map((c,i) => <div className="health" key={i}><span>{c.courseTitle}</span><b>{c.enrollmentCount} learners</b></div>)}</article></section></> }
+function LegacyCourseLibrary({ courses, loading, filters, setFilters, query, setQuery, open, enroll, learner }) { return <><section className="toolbar"><div className="search">{icons.search}<input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search courses" /></div><select value={filters.category} onChange={e => setFilters({...filters,category:e.target.value})}><option value="">All categories</option><option>Design</option><option>Development</option><option>Business</option></select>{!learner && <select value={filters.status} onChange={e => setFilters({...filters,status:e.target.value})}><option value="">All statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select>}<select value={filters.sortBy} onChange={e => setFilters({...filters,sortBy:e.target.value})}><option value="createdAt">Newest first</option><option value="title">Title</option><option value="enrollmentCount">Most enrolled</option></select></section><p className="result-count">{loading ? "Loading courses…" : `${courses.length} courses found`}</p><section className="course-grid">{courses.map(c => <article className="course-card" key={c.id}><div className="course-visual"><span>{c.category?.slice(0,1) || "C"}</span><em className={`badge ${c.status?.toLowerCase()}`}>{nice(c.status)}</em></div><div className="card-body"><p className="category">{c.category}</p><h3>{c.title}</h3><p className="description">{c.description}</p><div className="course-meta"><span>{c._count?.lessons || 0} lessons</span><span>{c._count?.enrollments || 0} learners</span></div><div className="card-actions"><button className="text-btn" onClick={() => open(c)}>View course {icons.arrow}</button>{learner && <button className="enroll" onClick={() => enroll(c.id)}>Enroll</button>}</div></div></article>)}</section>{!loading && !courses.length && <div className="empty-state">No courses match these filters.</div>}</> }
+function LegacyCourseDetail({course,instructor,progressVersion,back,edit,addLesson,action,enroll,complete}) { return <><button className="back" onClick={back}>← Back to courses</button><section className="course-hero"><div><span className={`badge ${course.status?.toLowerCase()}`}>{nice(course.status)}</span><p className="category">{course.category}</p><h2>{course.title}</h2><p>{course.description}</p><small>Created {date(course.createdAt)} · by {course.instructor?.name || "Instructor"}</small></div><div className="hero-actions">{instructor ? <>{<button className="secondary" onClick={edit}>Edit course</button>}{course.status === "DRAFT" && <button className="primary" onClick={() => action("publish")}>Publish course</button>}{course.status === "PUBLISHED" && <button className="danger" onClick={() => action("archive")}>Archive</button>}{course.status === "ARCHIVED" && <button className="primary" onClick={() => action("restore")}>Restore</button>}</> : <button className="primary" onClick={() => enroll(course.id)}>Enroll in course</button>}</div></section>{!instructor && <LearnerProgress courseId={course.id} version={progressVersion} />}<section className="lesson-section"><div className="lesson-heading"><div><p className="eyebrow">CURRICULUM</p><h2>{course.lessons?.length || 0} lessons</h2></div>{instructor && <button className="secondary" onClick={addLesson}>+ Add lesson</button>}</div><div className="lessons">{course.lessons?.map((lesson,i) => <article className="lesson" key={lesson.id}><span className="lesson-number">{String(i+1).padStart(2,"0")}</span><div><h3>{lesson.title}</h3><p>{lesson.content}</p></div>{!instructor && <button className="complete" onClick={() => complete(lesson)}>Mark complete</button>}</article>)}</div>{!course.lessons?.length && <div className="empty-state">Add your first lesson before publishing this course.</div>}</section></> }
+function Dashboard({ data, courses, onBrowse }) { const stats = data ? [[data.totalLearners, "Total learners"], [data.publishedCourses, "Published courses"], [data.completionsThisMonth, "Completions this month"], [data.learnersInProgress, "Learning now"]] : [["-", "Total learners"], ["-", "Published courses"], ["-", "Completions this month"], ["-", "Learning now"]]; const week = data?.weeklyCompletions || []; const maximum = Math.max(...week.map((item) => item.completions), 1); const progress = data?.progressBreakdown || {}; return <><section className="intro-card"><div><span className="spark">*</span><h2>Keep the momentum going.</h2><p>Create thoughtful learning experiences, see who needs support, and celebrate every milestone.</p><button onClick={onBrowse}>View course library -&gt;</button></div><div className="orb orb-one"/><div className="orb orb-two"/></section><div className="stat-grid">{stats.map(([number, label]) => <article className="stat" key={label}><strong>{number}</strong><span>{label}</span></article>)}</div><section className="dashboard-grid"><article className="panel chart"><div className="panel-title"><div><h3>Completions</h3><p>Last 8 weeks</p></div><b>{data?.completionsThisMonth || 0} this month</b></div><div className="bars">{week.length ? week.map((item, index) => <div key={index}><i style={{ height: `${Math.max(8, item.completions / maximum * 100)}%` }}/><small>W{index + 1}</small></div>) : <p className="empty">Your completion trend will appear here.</p>}</div></article><article className="panel"><div className="panel-title"><div><h3>Course health</h3><p>Enrollment snapshot</p></div></div>{(data?.courseBreakdown || courses.slice(0, 4).map((course) => ({ courseTitle: course.title, enrollments: course._count?.enrollments || 0 }))).slice(0, 4).map((course, index) => <div className="health" key={index}><span>{course.courseTitle}</span><b>{course.enrollments ?? course.enrollmentCount ?? 0} learners</b></div>)}</article></section><section className="progress-breakdown panel"><div><p className="eyebrow">LEARNER PROGRESS</p><h3>Progress states</h3></div><div><span>Not started <b>{progress.notStarted || 0}</b></span><span>In progress <b>{progress.inProgress || 0}</b></span><span>Completed <b>{progress.completed || 0}</b></span></div></section></> }
+function CourseLibrary({ courses, loading, filters, setFilters, query, setQuery, pagination, open, enroll, learner }) {
+  const setFilter = (key, value) => setFilters({ ...filters, [key]: value, page: key === "page" ? value : 1 });
+  return <><section className="toolbar"><div className="search">{icons.search}<input value={query} onChange={(e) => { setQuery(e.target.value); setFilter("page", 1); }} placeholder="Search titles and descriptions" /></div><select value={filters.category} onChange={(e) => setFilter("category", e.target.value)}><option value="">All categories</option><option>Design</option><option>Development</option><option>Business</option></select>{!learner && <><select value={filters.status} onChange={(e) => setFilter("status", e.target.value)}><option value="">All statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select><input className="filter-input" value={filters.instructorId || ""} onChange={(e) => setFilter("instructorId", e.target.value)} placeholder="Instructor ID" /></>}<select value={filters.sortBy} onChange={(e) => setFilter("sortBy", e.target.value)}><option value="createdAt">Newest first</option><option value="title">Title</option><option value="enrollmentCount">Most enrolled</option></select></section><p className="result-count">{loading ? "Loading courses..." : `${pagination?.total ?? courses.length} courses found`}</p><section className="course-grid">{courses.map((course) => <article className="course-card" key={course.id}><div className="course-visual"><span>{course.category?.slice(0, 1) || "C"}</span><em className={`badge ${course.status?.toLowerCase()}`}>{nice(course.status)}</em></div><div className="card-body"><p className="category">{course.category}</p><h3>{course.title}</h3><p className="description">{course.description}</p><div className="course-meta"><span>{course._count?.lessons || 0} lessons</span><span>{course._count?.enrollments || 0} learners</span></div><div className="card-actions"><button className="text-btn" onClick={() => open(course)}>View course -&gt;</button>{learner && <button className="enroll" onClick={() => enroll(course.id)}>Enroll</button>}</div></div></article>)}</section>{!loading && !courses.length && <div className="empty-state">No courses match these filters.</div>}{pagination?.totalPages > 1 && <div className="pagination"><button className="secondary" disabled={pagination.page <= 1} onClick={() => setFilter("page", pagination.page - 1)}>Previous</button><span>Page {pagination.page} of {pagination.totalPages}</span><button className="secondary" disabled={pagination.page >= pagination.totalPages} onClick={() => setFilter("page", pagination.page + 1)}>Next</button></div>}</>;
+}
+function CourseDetail({ course, instructor, progressVersion, back, edit, addLesson, action, enroll, complete, updateLesson, deleteLesson, reorderLessons, bulkEnroll, exportProgress }) {
+  const [editing, setEditing] = useState(null);
+  const move = (index, direction) => { const next = [...course.lessons]; const target = index + direction; if (target < 0 || target >= next.length) return; [next[index], next[target]] = [next[target], next[index]]; reorderLessons(next.map((lesson) => lesson.id)); };
+  return <><button className="back" onClick={back}>Back to courses</button><section className="course-hero"><div><span className={`badge ${course.status?.toLowerCase()}`}>{nice(course.status)}</span><p className="category">{course.category}</p><h2>{course.title}</h2><p>{course.description}</p><small>Created {date(course.createdAt)} by {course.instructor?.name || "Instructor"}</small></div><div className="hero-actions">{instructor ? <><button className="secondary" onClick={edit}>Edit course</button>{course.status === "DRAFT" && <button className="primary" onClick={() => action("publish")}>Publish course</button>}{course.status === "PUBLISHED" && <button className="danger" onClick={() => action("archive")}>Archive</button>}{course.status === "ARCHIVED" && <button className="primary" onClick={() => action("restore")}>Restore</button>}</> : <button className="primary" onClick={() => enroll(course.id)}>Enroll in course</button>}</div></section>{!instructor && <LearnerProgress courseId={course.id} version={progressVersion} />}{instructor && <EnrollmentTools bulkEnroll={bulkEnroll} exportProgress={exportProgress} />}<section className="lesson-section"><div className="lesson-heading"><div><p className="eyebrow">CURRICULUM</p><h2>{course.lessons?.length || 0} lessons</h2></div>{instructor && <button className="secondary" onClick={addLesson}>+ Add lesson</button>}</div><div className="lessons">{course.lessons?.map((lesson, index) => <article className="lesson" key={lesson.id}><span className="lesson-number">{String(index + 1).padStart(2, "0")}</span><div className="lesson-copy"><h3>{lesson.title}</h3><p>{lesson.content}</p></div>{instructor ? <div className="lesson-actions"><button onClick={() => move(index, -1)} disabled={!index}>Up</button><button onClick={() => move(index, 1)} disabled={index === course.lessons.length - 1}>Down</button><button onClick={() => setEditing(lesson)}>Edit</button><button className="delete" onClick={() => deleteLesson(lesson.id)}>Delete</button></div> : <button className="complete" onClick={() => complete(lesson)}>Mark complete</button>}</article>)}</div>{!course.lessons?.length && <div className="empty-state">Add your first lesson before publishing this course.</div>}</section><CommentActivity courseId={course.id} instructor={instructor} />{editing && <LessonEditor lesson={editing} save={async (form) => { await updateLesson(editing.id, form); setEditing(null); }} close={() => setEditing(null)} />}</>;
+}
+function EnrollmentTools({ bulkEnroll, exportProgress }) { const [emails, setEmails] = useState(""); const [results, setResults] = useState([]); const [error, setError] = useState(""); const submit = async (event) => { event.preventDefault(); try { setError(""); const data = await bulkEnroll(emails.split(/[\s,;]+/).filter(Boolean)); setResults(data.results || []); } catch (err) { setError(err.message); } }; const upload = async (event) => { const file = event.target.files?.[0]; if (file) setEmails(await file.text()); }; return <section className="enrollment-tools panel"><div><p className="eyebrow">ENROLLMENT</p><h3>Enroll learners</h3><p>Paste email addresses or upload a text/CSV file.</p></div><form onSubmit={submit}><textarea value={emails} onChange={(e) => setEmails(e.target.value)} placeholder="learner@example.com, another@example.com" rows="3" /><div><label className="file-button">Upload list<input type="file" accept=".txt,.csv" onChange={upload} /></label><button className="primary">Enroll learners</button><button type="button" className="secondary" onClick={exportProgress}>Export CSV</button></div></form>{error && <p className="form-error">{error}</p>}{results.length > 0 && <div className="enrollment-results">{results.map((result) => <span key={result.email} className={result.status.toLowerCase()}>{result.email}: {nice(result.status)}</span>)}</div>}</section> }
+function LessonEditor({ lesson, save, close }) { const [form, setForm] = useState({ title: lesson.title, content: lesson.content }); return <div className="modal-backdrop"><form className="modal" onSubmit={(e) => { e.preventDefault(); save(form); }}><button type="button" className="modal-close" onClick={close}>x</button><p className="eyebrow">CURRICULUM</p><h2>Edit lesson</h2><label>Title<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></label><label>Lesson content<textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows="5" required /></label><button className="primary">Save lesson</button></form></div> }
+function CommentActivity({ courseId, instructor }) { const [comment, setComment] = useState(""); const [activities, setActivities] = useState([]); const [message, setMessage] = useState(""); const load = () => { if (instructor) request("get", `/courses/${courseId}/activity`).then((data) => setActivities(data.activities || [])).catch(() => setActivities([])); }; useEffect(load, [courseId, instructor]); const submit = async (event) => { event.preventDefault(); try { await request("post", `/courses/${courseId}/comments`, { comment }); setComment(""); setMessage("Comment added"); load(); } catch (err) { setMessage(err.response?.data?.message || "Could not add comment"); } }; return <section className="activity-grid"><form className="panel comment-form" onSubmit={submit}><p className="eyebrow">COURSE COMMENTS</p><h3>Leave a comment</h3><textarea value={comment} required onChange={(e) => setComment(e.target.value)} placeholder="Write a comment..." rows="4" /><button className="primary">Add comment</button>{message && <small>{message}</small>}</form>{instructor && <article className="panel activity-log"><p className="eyebrow">IMMUTABLE HISTORY</p><h3>Activity log</h3>{activities.length ? activities.map((item) => <div key={item.id}><b>{nice(item.action)}</b><span>{item.actor?.name || "Unknown"} - {date(item.createdAt)}</span>{item.comment && <p>{item.comment}</p>}</div>) : <p>No activity yet.</p>}</article>}</section> }
+function LearnerProgress({ courseId, version = 0, compact = false }) {
+  const [progress, setProgress] = useState(null);
+  useEffect(() => { request("get", `/progress/courses/${courseId}`).then((data) => setProgress(data.progress)).catch(() => setProgress(null)); }, [courseId, version]);
+  if (!progress) return compact ? <span className="progress-label">Progress unavailable</span> : null;
+  return <div className={compact ? "progress-compact" : "progress-card"}><div><p className="eyebrow">YOUR PROGRESS</p><strong>{nice(progress.state)}</strong><span>{progress.completedLessons} of {progress.totalLessons} lessons complete</span></div><div className="progress-ring" style={{ "--progress": `${progress.percentage}%` }}><b>{progress.percentage}%</b></div></div>;
+}
+function MyLearning({ open }) {
+  const [items, setItems] = useState([]);
+  useEffect(() => { request("get", "/enrollments/my").then((data) => setItems(data.enrollments || [])).catch(() => setItems([])); }, []);
+  return <section className="course-grid">{items.map((enrollment) => <article className="course-card" key={enrollment.id}><div className="course-visual"><span>{enrollment.course.category?.[0]}</span></div><div className="card-body"><p className="category">{enrollment.course.category}</p><h3>{enrollment.course.title}</h3><LearnerProgress courseId={enrollment.course.id} compact /><button className="text-btn" onClick={() => open(enrollment.course)}>Continue learning {icons.arrow}</button></div></article>)}{!items.length && <div className="empty-state">You have not enrolled in a course yet.</div>}</section>;
+}
+function LegacyMyLearning({open}) { const [items,setItems]=useState([]); useEffect(()=>{request("get","/enrollments/my").then(d=>setItems(d.enrollments||[])).catch(()=>{});},[]); return <section className="course-grid">{items.map(e => <article className="course-card" key={e.id}><div className="course-visual"><span>{e.course.category?.[0]}</span></div><div className="card-body"><p className="category">{e.course.category}</p><h3>{e.course.title}</h3><p className="description">Continue where you left off.</p><button className="text-btn" onClick={()=>open(e.course)}>Open course {icons.arrow}</button></div></article>)}{!items.length&&<div className="empty-state">You haven’t enrolled in a course yet.</div>}</section> }
+function Alerts({alerts,dismiss}) { return <section className="panel alerts-panel">{alerts.length ? alerts.map((a,i)=><div className="alert" key={i}><div className="alert-dot">!</div><div><h3>{a.learnerName || "Learner"} needs a nudge</h3><p>Inactive in <strong>{a.courseTitle || "this course"}</strong> for {a.daysInactive || 14} days.</p></div><button className="secondary" onClick={()=>dismiss(a)}>Dismiss</button></div>):<div className="empty-state">All clear - no inactive learners right now.</div>}</section> }
+function Modal({modal,close,save}) { const [form,setForm]=useState(modal.course ? {title:modal.course.title,description:modal.course.description,category:modal.course.category} : emptyCourse); const lesson=modal.type === "lesson"; return <div className="modal-backdrop"><form className="modal" onSubmit={e=>{e.preventDefault();save(form)}}><button type="button" className="modal-close" onClick={close}>×</button><p className="eyebrow">{lesson?"CURRICULUM":"COURSE DETAILS"}</p><h2>{lesson?"Add a lesson":modal.course?"Edit course":"Create a course"}</h2><label>Title<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>{!lesson&&<label>Category<input required value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="e.g. Development"/></label>}<label>{lesson?"Lesson content":"Description"}<textarea required value={lesson ? (form.content||"") : form.description} onChange={e=>setForm({...form,[lesson?"content":"description"]:e.target.value})} rows="5"/></label><button className="primary" type="submit">{lesson?"Add lesson":"Save course"} {icons.arrow}</button></form></div> }
+function RoleAuth({ onLogin }) {
+  const [register, setRegister] = useState(true);
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "LEARNER" });
+  const [error, setError] = useState("");
+  const submit = async (event) => {
+    event.preventDefault(); setError("");
+    try {
+      const data = await request("post", register ? "/auth/register" : "/auth/login", form);
+      if (register) { setRegister(false); setError("Account created. Sign in with your email and password."); }
+      else onLogin(data);
+    } catch (err) { setError(err.response?.data?.message || "Something went wrong"); }
+  };
+  return <div className="auth">
+    <section className="auth-panel role-auth-panel">
+      <div className="brand"><span>CF</span> courseflow</div>
+      <p className="eyebrow auth-kicker">COURSE DELIVERY PLATFORM</p>
+      <h1>{register ? "Choose your workspace" : "Welcome back"}</h1>
+      <p>{register ? "Create an account as a learner or instructor. Your workspace will match your role." : "Sign in with the account you created."}</p>
+      {register && <div className="role-cards">
+        <button type="button" className={form.role === "LEARNER" ? "role-card selected" : "role-card"} onClick={() => setForm({ ...form, role: "LEARNER" })}><span className="role-icon">L</span><strong>Learner</strong><small>Enroll in courses, complete lessons, and track your own progress.</small></button>
+        <button type="button" className={form.role === "INSTRUCTOR" ? "role-card selected" : "role-card"} onClick={() => setForm({ ...form, role: "INSTRUCTOR" })}><span className="role-icon">I</span><strong>Instructor</strong><small>Create courses, manage lessons, enroll learners, and view alerts.</small></button>
+      </div>}
+      <form onSubmit={submit}>
+        {register && <input placeholder="Full name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}
+        <input type="email" placeholder="Email address" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <input type="password" placeholder="Password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        {error && <div className="form-error">{error}</div>}
+        <button className="primary" type="submit">{register ? `Create ${form.role === "LEARNER" ? "learner" : "instructor"} account` : "Sign in"} -&gt;</button>
+      </form>
+      <button className="link" onClick={() => { setRegister(!register); setError(""); }}>{register ? "Already have an account? Sign in" : "New to Courseflow? Create an account"}</button>
+    </section>
+    <aside className="auth-art"><span>ONE PLATFORM, TWO WORKSPACES</span><h2>Teach with clarity.<br />Learn with momentum.</h2><div className="auth-feature"><b>Instructor</b><span>Build courses and support your learners</span></div><div className="auth-feature"><b>Learner</b><span>Discover courses and celebrate progress</span></div></aside>
+  </div>;
+}
+export default App;
