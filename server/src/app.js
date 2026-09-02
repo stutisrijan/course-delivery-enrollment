@@ -17,10 +17,13 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
   process.env.CLIENT_URL,
 ].filter(Boolean);
+const isCourseflowVercelPreview = (origin) =>
+  /^https:\/\/course-delivery-enrollment(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin) ||
+  /^https:\/\/course-delivery-enrollment-[a-z0-9-]+-stutisrijans-projects\.vercel\.app$/i.test(origin);
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || isCourseflowVercelPreview(origin)) {
       return callback(null, true);
     }
 
