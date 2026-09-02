@@ -2,6 +2,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../config/prisma.js";
 
+const hasValidPassword = (password) =>
+  typeof password === "string" && password.length >= 8 && /[A-Za-z]/.test(password) && /\d/.test(password);
+
 export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -10,6 +13,13 @@ export const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Name, email, password and role are required",
+      });
+    }
+
+    if (!hasValidPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters and contain at least one letter and one number",
       });
     }
 
@@ -144,6 +154,13 @@ export const changePassword = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Current password and new password are required",
+      });
+    }
+
+    if (!hasValidPassword(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be at least 8 characters and contain at least one letter and one number",
       });
     }
 
