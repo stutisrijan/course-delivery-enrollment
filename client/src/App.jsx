@@ -16,6 +16,7 @@ function App() {
   const [filters, setFilters] = useState({ category: "", status: "", sortBy: "createdAt" });
   const [selected, setSelected] = useState(null); const [notice, setNotice] = useState("");
   const [modal, setModal] = useState(null); const [loading, setLoading] = useState(false); const [progressVersion, setProgressVersion] = useState(0);
+  const [darkTheme, setDarkTheme] = useState(() => localStorage.getItem("theme") === "dark");
   const instructor = user?.role === "INSTRUCTOR";
   const showNotice = (message) => { setNotice(message); setTimeout(() => setNotice(""), 3600); };
   const logout = () => { localStorage.clear(); setToken(null); setUser(null); setPage("dashboard"); };
@@ -30,6 +31,7 @@ function App() {
   const loadAlerts = async () => { if (instructor) { try { setAlerts((await request("get", "/inactivity-alerts")).alerts || []); } catch { setAlerts([]); } } };
   useEffect(() => { loadCourses(); }, [token, filters, query]);
   useEffect(() => { if (token) { loadDashboard(); loadAlerts(); } }, [token, user]);
+  useEffect(() => { document.documentElement.classList.toggle("dark-theme", darkTheme); localStorage.setItem("theme", darkTheme ? "dark" : "light"); }, [darkTheme]);
 
   const openCourse = async (course) => { try { setSelected((await request("get", `/courses/${course.id}`)).course); setPage("course"); } catch (e) { showNotice(e.response?.data?.message || "Could not open course"); } };
   const saveCourse = async (form) => { try { const d = modal?.course ? await request("put", `/courses/${modal.course.id}`, form) : await request("post", "/courses", form); setModal(null); showNotice(d.message); loadCourses(); loadDashboard(); } catch (e) { showNotice(e.response?.data?.message || "Could not save course"); } };
@@ -49,7 +51,7 @@ function App() {
       <div className="profile"><div className="avatar">{user.name?.[0] || "U"}</div><div><strong>{user.name}</strong><small>{user.email}</small></div></div>
       <button className="logout logout-visible" onClick={logout}>Log out</button>
     </aside>
-    <main><header><div><p className="eyebrow">{instructor ? "OVERVIEW" : "LEARNING PORTAL"}</p><h1>{page === "course" ? selected?.title : page === "alerts" ? "Inactivity alerts" : page === "learning" ? "My learning" : instructor ? "Good morning, " + user.name?.split(" ")[0] : "Find your next course"}</h1></div>{instructor && page === "courses" && <button className="primary" onClick={() => setModal({ type: "course" })}>{icons.plus} Create course</button>}</header>
+    <main><header><div><p className="eyebrow">{instructor ? "OVERVIEW" : "LEARNING PORTAL"}</p><h1>{page === "course" ? selected?.title : page === "alerts" ? "Inactivity alerts" : page === "learning" ? "My learning" : instructor ? "Good morning, " + user.name?.split(" ")[0] : "Find your next course"}</h1></div><div className="header-actions"><button className="theme-toggle" onClick={() => setDarkTheme(!darkTheme)} aria-label={darkTheme ? "Switch to light theme" : "Switch to dark theme"} title={darkTheme ? "Light theme" : "Dark theme"}>{darkTheme ? <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 15.7A8.5 8.5 0 0 1 8.3 3.4 8.5 8.5 0 1 0 20.6 15.7Z"/></svg>}</button>{instructor && page === "courses" && <button className="primary" onClick={() => setModal({ type: "course" })}>{icons.plus} Create course</button>}</div></header>
       {notice && <div className="notice">{notice}</div>}
       {page === "dashboard" && (instructor ? <Dashboard data={dashboard} courses={courses} onBrowse={() => setPage("courses")} /> : <CourseLibrary courses={courses} loading={loading} filters={filters} setFilters={setFilters} query={query} setQuery={setQuery} pagination={coursePagination} open={openCourse} enroll={selfEnroll} learner />)}
       {page === "courses" && <CourseLibrary courses={courses} loading={loading} filters={filters} setFilters={setFilters} query={query} setQuery={setQuery} pagination={coursePagination} open={openCourse} />}
@@ -132,7 +134,7 @@ function RoleAuth({ onLogin }) {
       <form onSubmit={submit}>
         {register && <input placeholder="Full name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}
         <input type="email" placeholder="Email address" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <div className="password-field"><input type={showPassword ? "text" : "password"} placeholder="Password" required minLength="8" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button></div>
+        <div className="password-field"><input type={showPassword ? "text" : "password"} placeholder="Password" required minLength="8" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 5.1A10.7 10.7 0 0 1 12 4.9c5.5 0 9.3 4.6 10 7.1a11.7 11.7 0 0 1-4.1 5.1M6.2 6.2A11.8 11.8 0 0 0 2 12c.7 2.5 4.5 7.1 10 7.1 1.3 0 2.5-.3 3.6-.8"/></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.7-7.1 10-7.1S22 12 22 12s-3.7 7.1-10 7.1S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
         {register && <small className="password-hint">Use 8+ characters with at least one letter and one number.</small>}
         {error && <div className="form-error">{error}</div>}
         <button className="primary" type="submit">{register ? `Create ${form.role === "LEARNER" ? "learner" : "instructor"} account` : "Sign in"} -&gt;</button>
