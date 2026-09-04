@@ -1,0 +1,15 @@
+import { useEffect, useState } from "react";
+import { getCourseProgress } from "../services/progressService";
+
+export default function CompletionCertificate({ course, version }) {
+  const [completed, setCompleted] = useState(false);
+  useEffect(() => { getCourseProgress(course.id).then((data) => setCompleted(data.progress?.state === "COMPLETED")).catch(() => setCompleted(false)); }, [course.id, version]);
+  const download = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const escapeXml = (value) => String(value || "").replace(/[<>&'"]/g, (character) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;" }[character]));
+    const learner = escapeXml(user.name || "Learner"); const title = escapeXml(course.title); const completedOn = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date());
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1131" viewBox="0 0 1600 1131"><rect width="1600" height="1131" fill="#f9f6ed"/><rect x="35" y="35" width="1530" height="1061" rx="8" fill="none" stroke="#176a50" stroke-width="8"/><rect x="58" y="58" width="1484" height="1015" rx="4" fill="none" stroke="#b7d6c3" stroke-width="2"/><text x="800" y="215" text-anchor="middle" font-family="Georgia,serif" font-size="72" fill="#176a50">Certificate of Completion</text><text x="800" y="325" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" fill="#65736b" letter-spacing="5">THIS CERTIFIES THAT</text><text x="800" y="470" text-anchor="middle" font-family="Georgia,serif" font-size="70" fill="#17201c">${learner}</text><line x1="420" y1="505" x2="1180" y2="505" stroke="#b7d6c3" stroke-width="3"/><text x="800" y="590" text-anchor="middle" font-family="Arial,sans-serif" font-size="28" fill="#65736b">has successfully completed</text><text x="800" y="690" text-anchor="middle" font-family="Georgia,serif" font-size="50" fill="#176a50">${title}</text><text x="800" y="835" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" fill="#65736b">Awarded on ${completedOn}</text><circle cx="800" cy="930" r="48" fill="#176a50"/><text x="800" y="944" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" font-weight="bold" fill="#fff">CF</text><text x="800" y="1025" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" fill="#176a50" letter-spacing="3">COURSEFLOW</text></svg>`;
+    const blob = new Blob([svg], { type: "image/svg+xml" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${course.title.replace(/[^a-z0-9]/gi, "_")}_certificate.svg`; link.click(); URL.revokeObjectURL(url);
+  };
+  return completed ? <section className="certificate-card"><div><p className="eyebrow">ACHIEVEMENT UNLOCKED</p><h3>Congratulations, you completed this course!</h3><p>Your personalized certificate is ready to download.</p></div><button className="primary" onClick={download}>Download certificate</button></section> : null;
+}
