@@ -67,22 +67,6 @@ PostgreSQL (Supabase)
 
 The API owns authorization, state-transition checks, enrollment validation, server-side catalogue processing, and activity logging. See [docs/architecture.md](docs/architecture.md) for the detailed design and [docs/schema.md](docs/schema.md) for the database model.
 
-## Project structure
-
-```text
-.
-├── client/                 # React/Vite browser application
-│   ├── src/
-│   │   ├── App.jsx         # Main UI and client workflows
-│   │   └── services/api.js # Axios API client and JWT header handling
-│   └── .env.example
-├── server/                 # Express REST API
-│   ├── prisma/             # Prisma schema and migrations
-│   ├── src/controllers/    # Business logic
-│   ├── src/routes/         # API routes
-│   └── src/middleware/     # Authentication and authorization
-└── docs/                   # Architecture, schema, decisions, and plan
-```
 
 ## Run locally
 
